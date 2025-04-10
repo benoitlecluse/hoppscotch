@@ -5,6 +5,7 @@ import {
   OpenAPIV3_1 as OpenAPIV31,
 } from "openapi-types"
 import SwaggerParser from "@apidevtools/swagger-parser"
+import jfs from "json-schema-faker"
 import yaml from "js-yaml"
 import {
   FormDataKeyValue,
@@ -382,6 +383,29 @@ const parseOpenAPIV3Body = (
     string,
     OpenAPIV3.MediaTypeObject | OpenAPIV31.MediaTypeObject,
   ] = objs[0]
+
+  if (
+    contentType.startsWith("application/json") ||
+    contentType === "text/json"
+  ) {
+    try {
+      jfs.option({
+        useExamplesValue: true,
+        alwaysFakeOptionals: true,
+        fillProperties: true,
+      })
+      return {
+        contentType: "application/json",
+        body: JSON.stringify(jfs.generate(media.schema ?? {})),
+      }
+    } catch (e) {
+      console.error(e)
+      return {
+        contentType: "application/json",
+        body: JSON.stringify({}),
+      }
+    }
+  }
 
   return contentType in knownContentTypes
     ? contentType === "multipart/form-data" ||
